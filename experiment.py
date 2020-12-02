@@ -92,5 +92,13 @@ class Experiment:
     def log_results(self):
         logger.info(f"RESULTS:\n {self.results} \n")
 
-    def summarize_results(self):
-        logger.info(f"RESULTS SUMMARY:\n {self.results.describe()} \n")
+    def summarize_results(self, export=False, saveto=None, log=True):
+        if self.results.empty:
+            logger.info(f"RESULTS SUMMARY:\n <Empty Dataframe> \n")
+        else:
+            if export:
+                self.results.describe().to_csv(os.path.join(self.run_dir, 'results_summary.csv'))
+            if saveto is not None:
+                self.results.describe().to_csv(saveto)
+            if log:
+                logger.info(f"RESULTS SUMMARY:\n {self.results.describe()} \n")
