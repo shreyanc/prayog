@@ -28,7 +28,7 @@ class Experiment:
         else:
             self.seed = self.args['seed']
 
-        self.run_name = self._create_run_name()
+        self.run_name, self.run_hash = self._create_run_name()
 
         if exp_name is None:
             self.name = __name__
@@ -48,7 +48,8 @@ class Experiment:
         self._take_code_snapshot()
         self._init_logger()
         self.exp_params = {'run_dir': self.run_dir,
-                           'run_name': self.run_name}
+                           'run_name': self.run_name,
+                           'run_hash': self.run_hash}
 
     def _create_run_name(self):
         dtstr = dt.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -56,9 +57,14 @@ class Experiment:
         name_hash.update(str(time.time()).encode('utf-8'))
         run_hash = name_hash.hexdigest()[:5]
         run_name = f'{run_hash}_{dtstr}'
-        if self.args['suffix'] is not None:
+        if 'auto' in self.args['suffix']:
+            run_name_str = ''
+            for k, v in self.hp.items():
+                run_name_str += f"_{k}={str(v)}"
+            run_name += run_name_str + self.args['suffix'].replace('auto', '')
+        elif self.args['suffix'] is not None:
             run_name += '_' + self.args['suffix']
-        return run_name
+        return run_name, run_hash
 
     def _take_code_snapshot(self):
         shutil.copytree(os.path.dirname(os.path.abspath(__file__)), os.path.join(self.run_dir, 'code'))
@@ -97,8 +103,8 @@ class Experiment:
             logger.info(f"RESULTS SUMMARY:\n <Empty Dataframe> \n")
         else:
             if export:
-                self.results.describe().to_csv(os.path.join(self.run_dir, 'results_summary.csv'))
+                self.results.agg(['count', 'mean', 'std', 'min', 'max']).to_csv(os.path.join(self.run_dir, 'results_summary.csv'))
             if saveto is not None:
-                self.results.describe().to_csv(saveto)
+                self.results.agg(['count', 'mean', 'std', 'min', 'max']).to_csv(saveto)
             if log:
-                logger.info(f"RESULTS SUMMARY:\n {self.results.describe()} \n")
+                logger.info(f"RESULTS SUMMARY:\n {self.results.agg(['count', 'mean', 'std', 'min', 'max'])} \n")
