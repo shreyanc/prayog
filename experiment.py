@@ -28,7 +28,7 @@ class Experiment:
         else:
             self.seed = self.args['seed']
 
-        self.run_name, self.run_hash = self._create_run_name()
+        self.run_name = self._create_run_name()
 
         if exp_name is None:
             self.name = __name__
@@ -42,14 +42,17 @@ class Experiment:
 
         self.run_dir = os.path.join(self.exp_dir, self.run_name)
 
-        if not self.run_dir:
+        if not os.path.exists(self.run_dir):
             os.makedirs(self.run_dir)
 
-        self._take_code_snapshot()
+        if self.args['debug'] or os.uname()[1] in ['shreyan-HP', 'shreyan-All-Series']:
+            pass
+        else:
+            self._take_code_snapshot()
+
         self._init_logger()
         self.exp_params = {'run_dir': self.run_dir,
-                           'run_name': self.run_name,
-                           'run_hash': self.run_hash}
+                           'run_name': self.run_name}
 
     def _create_run_name(self):
         dtstr = dt.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -64,7 +67,7 @@ class Experiment:
             run_name += run_name_str + self.args['suffix'].replace('auto', '')
         elif self.args['suffix'] is not None:
             run_name += '_' + self.args['suffix']
-        return run_name, run_hash
+        return run_name
 
     def _take_code_snapshot(self):
         shutil.copytree(os.path.dirname(os.path.abspath(__file__)), os.path.join(self.run_dir, 'code'))
